@@ -16,6 +16,5 @@ try {
 } catch (error) {
     console.error("Error connecting to MongoDB:", error);
 }
-
 // Default export of db and client
 export default { db, client }; 
