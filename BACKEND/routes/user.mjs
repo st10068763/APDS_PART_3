@@ -12,7 +12,6 @@ const router = express.Router();
 var store = new ExpressBrute.MemoryStore();
 var bruteforce = new ExpressBrute(store);
 
-
 router.get("/", authEmployee, async (req, res) => {
     let collection = await db.collection("posts");
     let results = await collection.find({}).toArray();
