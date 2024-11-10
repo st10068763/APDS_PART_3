@@ -26,7 +26,7 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await axios.post('https://localhost:3001/user/login', formData);
+      const response = await axios.post('https://localhost:3001/api/user/login', formData);
       console.log("Login successful:", response.data);
       
       localStorage.setItem('user', JSON.stringify({
@@ -40,7 +40,7 @@ const Login = () => {
       navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error.response?.data?.message || "An error occurred during login");
-      setError(error.response?.data?.message || "Invalid credentials. Please try again.");
+      setError(error.response?.data?.message || "Invalid account details. Please try again.");
     }
   };
 

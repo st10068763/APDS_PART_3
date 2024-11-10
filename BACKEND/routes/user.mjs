@@ -4,33 +4,13 @@ import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import ExpressBrute from "express-brute";
-// importing the employee authentication middleware 
-import authEmployee from "../authEmployee.js";
 
 const router = express.Router();
 
 var store = new ExpressBrute.MemoryStore();
 var bruteforce = new ExpressBrute(store);
 
-router.get("/", authEmployee, async (req, res) => {
-    let collection = await db.collection("posts");
-    let results = await collection.find({}).toArray();
-    res.send(results).status(200);
-});
-
-router.post("/upload", authEmployee, async (req, res) => {
-    let newDocument = {
-        user: req.body.user,
-        content: req.body.content,
-        image: req.body.image
-    };
-    let collection = await db.collection("posts");
-    let result = await collection.insertOne(newDocument);
-    res.send(result).status(204);
-});
-
-
-//------------Sign up router post ------------
+// Sign up
 router.post("/signup", async (req, res) => {
     try {
         const { 
@@ -85,22 +65,20 @@ router.post("/signup", async (req, res) => {
     }
 });
 
-//-------------------Login router post ----------------
+//---------------------Login
 router.post("/login", bruteforce.prevent, async (req, res) => {
     const { identifier, password } = req.body;
     console.log(`Login attempt for: ${identifier}`);
 
-        
     try {
         const collection = await db.collection("users");
         const user = await collection.findOne({ 
-            $or: [{ username: identifier }, { accountNumber: identifier }]
-        });
-
-
+            $or: [{ username: identifier }, { email: identifier }]
+        });        
+        // Check if user exists
         if (!user) {
             console.log(`User not found: ${identifier}`);
-            return res.status(401).json({ message: "Authentication failed" });
+            return res.status(401).json({ message: "User not found" });
         }
 
         console.log(`User found: ${user.username}`);
@@ -110,20 +88,8 @@ router.post("/login", bruteforce.prevent, async (req, res) => {
 
         if (!passwordMatch) {
             console.log(`Password mismatch for user: ${user.username}`);
-            return res.status(401).json({ message: "Authentication failed" });
+            return res.status(401).json({ message: "Password does not match" });
         }
-            //--------------Redirect employee to the employee-only page
-            if (user.role === "employee") {
-                return res.status(200).json({
-                    message: "Authentication successful",
-                    redirect: "/employee/dashboard", 
-                    token, 
-                    userId: user._id,
-                    username: user.username,
-                    firstName: user.firstName,
-                    lastName: user.lastName
-                });
-            }
         
         console.log(`Password match for user: ${user.username}`);
 
@@ -154,7 +120,7 @@ router.post("/login", bruteforce.prevent, async (req, res) => {
     }
 });
 
-//-------------------Local Payment router post ----------------
+// Local Payment
 router.post("/local-payment", async (req, res) => {
     const { userId, recipient, amount, accountNumber, currency } = req.body;
     console.log(`Local payment attempt for user: ${userId}`);
@@ -200,7 +166,7 @@ router.post("/local-payment", async (req, res) => {
     }
 });
 
-//-----------------------International Payment router post ----------------
+// International Payment
 router.post("/international-payment", async (req, res) => {
     const { userId, recipient, amount, accountNumber, currency, swiftCode } = req.body;
     console.log(`International payment attempt for user: ${userId}`);
@@ -253,34 +219,7 @@ router.post("/international-payment", async (req, res) => {
     }
 });
 
-// Transaction verification route for employees
-router.get("/verify-transactions", async (req, res) => {
-    console.log("Employee transaction verification request");
-
-    // Checks for a user role stored in the JWT payload
-    if (!req.user || req.user.role !== "employee") {
-        return res.status(403).json({ message: "Forbidden: Employee access only" });
-    }
-
-    try {
-        // Access the transactions collection
-        const transactionCollection = await db.collection("transactions");
-
-        // Fetch all transactions (you could add filters here if necessary)
-        const transactions = await transactionCollection
-            .find({})
-            .sort({ date: -1 })
-            .toArray();
-
-        console.log(`Employee fetched ${transactions.length} transactions for verification`);
-
-        res.status(200).json(transactions);
-    } catch (error) {
-        console.error("Error fetching transactions for verification:", error);
-        res.status(500).json({ message: "Error fetching transactions for verification" });
-    }
-});
-//---------------------------- end of transaction verification route -------------------
+// Fetch user transactions
 router.get("/transactions/:userId", async (req, res) => {
     const userId = req.params.userId;
     console.log(`Fetching transactions for user: ${userId}`);
@@ -300,5 +239,132 @@ router.get("/transactions/:userId", async (req, res) => {
         res.status(500).json({ message: "Error fetching transactions" });
     }
 });
+
+//------------------------Employee Login route
+router.post("/employee/login", bruteforce.prevent, async (req, res) => {
+    const { identifier, password } = req.body;
+    console.log(`Employee login attempt for: ${identifier}`);
+
+    try {
+        const collection = await db.collection("employees");
+        const employee = await collection.findOne({ 
+            $or: [{ username: identifier }, { email: identifier }]
+        });
+
+        // Check if employee exists
+        if (!employee) {
+            console.log(`Employee not found: ${identifier}`);
+            return res.status(401).json({ message: "Employee not found" });
+        }
+
+        console.log(`Employee found: ${employee.username}`);
+
+        // Compare the provided password with the hashed password in the database
+        const passwordMatch = await bcrypt.compare(password, employee.password);
+
+        if (!passwordMatch) {
+            console.log(`Password mismatch for employee: ${employee.username}`);
+            return res.status(401).json({ message: "Password does not match" });
+        }
+        
+        console.log(`Password match for employee: ${employee.username}`);
+
+        // Authentication successful
+        const token = jwt.sign(
+            { employeeId: employee._id, username: employee.username },
+            process.env.JWT_SECRET || "this_secret_should_be_longer_than_it_is",
+            { expiresIn: "1h" }
+        );
+
+        // Log the token to the console
+        console.log(`Token generated for employee: ${employee.username}: ${token}`);
+
+        // Respond to the client with the token and employee details
+        res.status(200).json({ 
+            message: "Authentication successful", 
+            token, 
+            employeeId: employee._id,
+            username: employee.username,
+            firstName: employee.firstName,
+            lastName: employee.lastName
+        });
+
+        console.log(`Login successful for employee: ${employee.username}`);
+    } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({ message: "Login failed" });
+    }
+});
+
+
+//-------------------Employee Dashboard 
+router.get("/employee-dashboard", async (req, res) => {
+    try {
+        const employeeCollection = await db.collection("employees");
+        const transactionCollection = await db.collection("transactions");
+
+        // Example data to display on the dashboard
+        const pendingTransactions = await transactionCollection
+            .find({ status: "pending" })
+            .toArray();
+        const employeeCount = await employeeCollection.countDocuments();
+
+        // Construct the response with relevant data
+        res.status(200).json({
+            pendingTransactions,
+            employeeCount,
+            message: "Employee dashboard data fetched successfully"
+        });
+    } catch (error) {
+        console.error("Error fetching employee dashboard data:", error);
+        res.status(500).json({ message: "Error fetching dashboard data" });
+    }
+});
+
+//-------------------Add Employee
+router.post("/add-employee", async (req, res) => {
+    console.log("Request received at /add-employee");
+    try {
+        const { firstName, lastName, email, username, password, role } = req.body;
+
+        // Check if all required fields are provided
+        if (!firstName || !lastName || !email || !username || !password || !role) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        const employeeCollection = await db.collection("employees");
+
+        // Check if username or email already exists
+        const existingEmployee = await employeeCollection.findOne({ 
+            $or: [{ username }, { email }]
+        });
+        if (existingEmployee) {
+            return res.status(400).json({ message: "Username or email already exists" });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Insert new employee document
+        const newEmployee = {
+            firstName,
+            lastName,
+            email,
+            username,
+            password: hashedPassword,
+            role,
+            createdAt: new Date()
+        };
+
+        const result = await employeeCollection.insertOne(newEmployee);
+        res.status(201).json({ message: "Employee added successfully", employeeId: result.insertedId });
+    } catch (error) {
+        console.error("Error adding employee:", error);
+        res.status(500).json({ message: "Internal server error" });
+        console.log("Request Body:", req.body);
+
+    }
+});
+
 
 export default router;
