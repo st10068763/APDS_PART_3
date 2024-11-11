@@ -120,7 +120,7 @@ router.post("/login", bruteforce.prevent, async (req, res) => {
     }
 });
 
-// Local Payment
+//-------------------Local Payment
 router.post("/local-payment", async (req, res) => {
     const { userId, recipient, amount, accountNumber, currency } = req.body;
     console.log(`Local payment attempt for user: ${userId}`);
@@ -166,7 +166,7 @@ router.post("/local-payment", async (req, res) => {
     }
 });
 
-// International Payment
+//---------------------International Payment
 router.post("/international-payment", async (req, res) => {
     const { userId, recipient, amount, accountNumber, currency, swiftCode } = req.body;
     console.log(`International payment attempt for user: ${userId}`);
@@ -219,7 +219,7 @@ router.post("/international-payment", async (req, res) => {
     }
 });
 
-// Fetch user transactions
+//------------------Fetch user transactions
 router.get("/transactions/:userId", async (req, res) => {
     const userId = req.params.userId;
     console.log(`Fetching transactions for user: ${userId}`);
@@ -365,6 +365,5 @@ router.post("/add-employee", async (req, res) => {
 
     }
 });
-
 
 export default router;

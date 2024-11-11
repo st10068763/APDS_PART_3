@@ -1,48 +1,65 @@
 import express from 'express';
-import db from "../db/conn.mjs";
+import db from '../db/conn.mjs';
+import { ObjectId } from 'mongodb';  // Import ObjectId for MongoDB
 
 const router = express.Router();
 
-// Mock data or database integration
-const transactions = [
-  { id: 1, payee: 'John Doe', account: '123456789', amount: 100, swiftCode: 'ABC123XYZ', status: 'Pending', date: '2024-11-01' },
-  { id: 2, payee: 'Jane Smith', account: '987654321', amount: 250, swiftCode: 'DEF456UVW', status: 'Pending', date: '2024-11-02' },
-  { id: 3, payee: 'Alice Johnson', account: '564738291', amount: 500, swiftCode: 'GHI789RST', status: 'Verified', date: '2024-11-03' },
-  { id: 4, payee: 'Bob Brown', account: '102938475', amount: 350, swiftCode: 'JKL012MNO', status: 'Completed', date: '2024-11-04' },
-  { id: 5, payee: 'Charlie Green', account: '564738290', amount: 150, swiftCode: 'PQR345STU', status: 'Pending', date: '2024-11-05' },
-];
-
 // Fetch all transactions or filter by user
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const user = req.query.user;
-  if (user) {
-    const userTransactions = transactions.filter(t => t.user === user);
-    res.json(userTransactions);
-  } else {
+
+  try {
+    let transactions;
+    if (user) {
+      // Fetch transactions based on userId (assumed 'user' is the userId)
+      transactions = await db.collection('transactions').find({ userId: user }).toArray();
+    } else {
+      // Fetch all transactions if no user query is provided
+      transactions = await db.collection('transactions').find().toArray();
+    }
     res.json(transactions);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching transactions', error: err });
   }
 });
 
 // Verify transaction
-router.post('/:id/verify', (req, res) => {
-  const transaction = transactions.find(t => t.id === parseInt(req.params.id));
-  if (transaction) {
-    transaction.status = 'Verified';
-    res.json({ message: `Transaction ${req.params.id} verified`, transaction });
-  } else {
-    res.status(404).json({ message: 'Transaction not found' });
-  }
+router.post('/:id/verify', async (req, res) => {
+    console.log(`Verifying transaction: ${req.params.id}`);
+    try {
+        // Ensure the ID is properly converted to ObjectId
+        const transaction = await db.collection('transactions').findOneAndUpdate(
+            { _id: new ObjectId(req.params.id) },  // Convert the string ID to ObjectId
+            { $set: { status: 'Verified' } },
+            { returnDocument: 'after' }
+        );
+        if (transaction.value) {
+            res.json({ message: `Transaction ${req.params.id} verified`, transaction: transaction.value });
+        } else {
+            res.status(404).json({ message: 'Transaction not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Verification failed', error });
+    }
 });
 
 // Reject transaction
-router.post('/:id/reject', (req, res) => {
-  const transaction = transactions.find(t => t.id === parseInt(req.params.id));
-  if (transaction) {
-    transaction.status = 'Rejected';
-    res.json({ message: `Transaction ${req.params.id} rejected`, transaction });
-  } else {
-    res.status(404).json({ message: 'Transaction not found' });
-  }
+router.post('/:id/reject', async (req, res) => {
+    try {
+        // Ensure the ID is properly converted to ObjectId
+        const transaction = await db.collection('transactions').findOneAndUpdate(
+            { _id: new ObjectId(req.params.id) },  // Convert the string ID to ObjectId
+            { $set: { status: 'Rejected' } },
+            { returnDocument: 'after' }
+        );
+        if (transaction.value) {
+            res.json({ message: `Transaction ${req.params.id} rejected`, transaction: transaction.value });
+        } else {
+            res.status(404).json({ message: 'Transaction not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Rejection failed', error });
+    }
 });
 
 export default router;

@@ -85,7 +85,7 @@ const EmployeeLogin = () => {
                         <Eye style={styles.icon} onClick={togglePasswordVisibility} />
                     )}
                 </div>
-                <button type="submit" style={styles.button}>Login</button>
+                <button type="submit" style={styles.submitButton}>Login</button>
             </form>
         </div>
     );
