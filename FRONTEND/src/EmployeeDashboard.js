@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { CheckCircle, XCircle, Loader } from 'lucide-react';
+import { Loader } from 'lucide-react';
 
 const EmployeeDashboard = () => {
     const [transactions, setTransactions] = useState([]);
@@ -27,9 +27,9 @@ const EmployeeDashboard = () => {
 
     const verifyTransaction = async (transactionId) => {
         try {
-            await axios.patch(`https://localhost:3001/transactions/${transactionId}/verify`);
+            await axios.post(`https://localhost:3001/transactions/${transactionId}/verify`);
             setTransactions(transactions.map(t => 
-                t._id === transactionId ? { ...t, verified: true } : t
+                t.id === transactionId ? { ...t, status: "Verified" } : t
             ));
         } catch (error) {
             console.error("Verification failed:", error);
@@ -39,7 +39,7 @@ const EmployeeDashboard = () => {
     const submitToSwift = async () => {
         setSubmitting(true);
         try {
-            const verifiedIds = transactions.filter(t => t.verified).map(t => t._id);
+            const verifiedIds = transactions.filter(t => t.status === "Verified").map(t => t.id);
             await axios.post('https://localhost:3001/transactions/submit-to-swift', { transactionIds: verifiedIds });
             alert("Verified transactions submitted to SWIFT successfully.");
             fetchTransactions();
@@ -61,6 +61,7 @@ const EmployeeDashboard = () => {
                     <table style={styles.table}>
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th>Payee</th>
                                 <th>Account</th>
                                 <th>Amount</th>
@@ -71,23 +72,20 @@ const EmployeeDashboard = () => {
                         </thead>
                         <tbody>
                             {transactions.map(transaction => (
-                                <tr key={transaction._id} style={styles.row}>
+                                <tr key={transaction.id} style={styles.row}>
+                                    <td>{transaction.id}</td>
                                     <td>{transaction.payee}</td>
                                     <td>{transaction.account}</td>
                                     <td>{transaction.amount}</td>
-                                    <td>{transaction.swiftCode}</td>
-                                    <td style={transaction.verified ? styles.verified : styles.pending}>
-                                        {transaction.verified ? (
-                                            <CheckCircle color="green" />
-                                        ) : (
-                                            <XCircle color="orange" />
-                                        )}
+                                    <td>{transactions.swiftCode}</td>
+                                    <td style={transaction.status === "Verified" ? styles.verified : styles.pending}>
+                                        {transaction.status}
                                     </td>
                                     <td>
-                                        {!transaction.verified && (
+                                        {transaction.status === "Pending" && (
                                             <button 
                                                 style={styles.verifyButton} 
-                                                onClick={() => verifyTransaction(transaction._id)}
+                                                onClick={() => verifyTransaction(transaction.id)}
                                             >
                                                 Verify
                                             </button>
