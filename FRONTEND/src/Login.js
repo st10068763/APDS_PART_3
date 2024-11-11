@@ -21,9 +21,26 @@ const Login = () => {
     });
   };
 
+  // Regex patterns for validation
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic email format
+  const usernamePattern = /^[a-zA-Z0-9_-]{3,20}$/; // Allows alphanumeric characters, underscores, and hyphens (3-20 chars)
+  const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/; // Minimum 8 chars, at least 1 letter, 1 number, and 1 special character
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // Identifier validation (check if it's a valid email or username)
+    if (!emailPattern.test(formData.identifier) && !usernamePattern.test(formData.identifier)) {
+      setError("Please enter a valid email or username.");
+      return;
+    }
+
+    // Password validation check
+    if (!passwordPattern.test(formData.password)) {
+      setError("Password must be at least 8 characters long, contain at least one letter, one number, and one special character.");
+      return;
+    }
 
     try {
       const response = await axios.post('https://localhost:3001/api/user/login', formData);

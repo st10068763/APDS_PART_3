@@ -24,6 +24,12 @@ const Registration = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+    // Regex patterns for validation
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic email format
+    const usernamePattern = /^[a-zA-Z0-9_-]{3,20}$/; // Allows alphanumeric characters, underscores, and hyphens (3-20 chars)
+    //const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+
+
   const validateField = (name, value) => {
     switch (name) {
       case 'firstName':
@@ -32,13 +38,14 @@ const Registration = () => {
       case 'idNumber':
         return /^\d{13}$/.test(value) ? '' : 'ID number must be exactly 13 digits';
       case 'email':
-        return /\S+@\S+\.\S+/.test(value) ? '' : 'Invalid email format';
-      case 'password':
-        return value.length >= 8 ? '' : 'Password must be at least 8 characters long';
+        return emailPattern.test(value) ? '' : 'Invalid email format';
+      case 'username':
+        return usernamePattern.test(value) ? '' : 'Username must be 3-20 characters, with no special symbols other than underscores and hyphens';
       default:
         return '';
     }
   };
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,7 +84,7 @@ const Registration = () => {
       const { confirmPassword, ...dataToSend } = formData;
       
       // Send registration request with all data
-      const response = await axios.post('https://localhost:3001/user/signup', dataToSend);
+      const response = await axios.post('https://localhost:3001/api/user/signup', dataToSend);
   
       console.log("Registration successful:", response.data);
       setIsLoading(false);

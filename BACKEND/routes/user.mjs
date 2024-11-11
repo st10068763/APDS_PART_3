@@ -5,10 +5,20 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import ExpressBrute from "express-brute";
 
+// using express-brute to prevent brute force attacks
 const router = express.Router();
 
 var store = new ExpressBrute.MemoryStore();
 var bruteforce = new ExpressBrute(store);
+
+// Helper function for regex validation
+const validatePattern = (pattern, value) => pattern.test(value);
+
+// Defining regex patterns
+const usernamePattern = /^[a-zA-Z0-9_-]{3,20}$/; // Allows alphanumeric characters, underscores, and hyphens (3-20 chars)
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic email format
+const accountNumberPattern = /^\d{10}$/; // Exactly 10 digits
+const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/; // Minimum 8 chars, at least 1 letter and 1 number
 
 // Sign up
 router.post("/signup", async (req, res) => {
@@ -25,9 +35,15 @@ router.post("/signup", async (req, res) => {
 
         console.log(`Signup attempt for username: ${username}`);
 
-        if (!username || !password) {
-            console.log("Signup failed: Username and password are required");
-            return res.status(400).json({ message: "Username and password are required" });
+        // Validate required fields with regex patterns
+        if (!validatePattern(usernamePattern, username)) {
+            return res.status(400).json({ message: "Invalid username format" });
+        }
+        if (!validatePattern(emailPattern, email)) {
+            return res.status(400).json({ message: "Invalid email format" });
+        }
+        if (!validatePattern(accountNumberPattern, accountNumber)) {
+            return res.status(400).json({ message: "Account number must be exactly 10 digits" });
         }
 
         const collection = await db.collection("users");
@@ -65,60 +81,63 @@ router.post("/signup", async (req, res) => {
     }
 });
 
-//---------------------Login
+//-----------------Login
 router.post("/login", bruteforce.prevent, async (req, res) => {
     const { identifier, password } = req.body;
-    console.log(`Login attempt for: ${identifier}`);
+
+    // Validate identifier format
+    if (!validatePattern(usernamePattern, identifier) &&
+        !validatePattern(emailPattern, identifier) &&
+        !validatePattern(accountNumberPattern, identifier)) {
+        return res.status(400).json({ message: "Invalid identifier format" });
+    }
+    if (!validatePattern(passwordPattern, password)) {
+        return res.status(400).json({ message: "Invalid password format" });
+    }
 
     try {
         const collection = await db.collection("users");
+
+        // Find user by username, email, or account number
         const user = await collection.findOne({ 
-            $or: [{ username: identifier }, { email: identifier }]
-        });        
-        // Check if user exists
+            $or: [
+                { username: identifier },
+                { email: identifier },
+                { accountNumber: identifier }
+            ]
+        });
+
         if (!user) {
-            console.log(`User not found: ${identifier}`);
             return res.status(401).json({ message: "User not found" });
         }
 
-        console.log(`User found: ${user.username}`);
-
-        // Compare the provided password with the hashed password in the database
+        // Check if the provided password matches the hashed password
         const passwordMatch = await bcrypt.compare(password, user.password);
-
         if (!passwordMatch) {
-            console.log(`Password mismatch for user: ${user.username}`);
-            return res.status(401).json({ message: "Password does not match" });
+            return res.status(401).json({ message: "Incorrect password" });
         }
-        
-        console.log(`Password match for user: ${user.username}`);
 
-        // Authentication successful
+        // Generate JWT token
         const token = jwt.sign(
             { userId: user._id, username: user.username },
             process.env.JWT_SECRET || "this_secret_should_be_longer_than_it_is",
             { expiresIn: "1h" }
         );
 
-        // Log the token to the console
-        console.log(`Token generated for user: ${user.username}: ${token}`);
-
-        // Respond to the client with the token and user details
-        res.status(200).json({ 
-            message: "Authentication successful", 
-            token, 
+        res.status(200).json({
+            message: "Authentication successful",
+            token,
             userId: user._id,
             username: user.username,
             firstName: user.firstName,
             lastName: user.lastName
         });
-
-        console.log(`Login successful for user: ${user.username}`);
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ message: "Login failed" });
     }
 });
+
 
 //-------------------Local Payment
 router.post("/local-payment", async (req, res) => {
@@ -166,23 +185,17 @@ router.post("/local-payment", async (req, res) => {
     }
 });
 
-//---------------------International Payment
+//---------------------International payment
 router.post("/international-payment", async (req, res) => {
     const { userId, recipient, amount, accountNumber, currency, swiftCode } = req.body;
-    console.log(`International payment attempt for user: ${userId}`);
+    const swiftCodePattern = /^[A-Z0-9]{11}$/; //regex pattern for swift code
 
-    // Validate account number
-    if (!accountNumber || accountNumber.length !== 10 || !/^\d+$/.test(accountNumber)) {
-        console.log(`Invalid account number: ${accountNumber}`);
-        return res.status(400).json({ message: "Account number must be 10 digits" });
+    if (!validatePattern(accountNumberPattern, accountNumber)) {
+        return res.status(400).json({ message: "Account number must be exactly 10 digits" });
     }
-
-    // Validate SWIFT code
-    if (!swiftCode || swiftCode.length !== 11) {
-        console.log(`Invalid SWIFT code: ${swiftCode}`);
+    if (!validatePattern(swiftCodePattern, swiftCode)) {
         return res.status(400).json({ message: "SWIFT code must be 11 characters" });
     }
-
     try {
         const userCollection = await db.collection("users");
         const user = await userCollection.findOne({ _id: new ObjectId(userId) });
