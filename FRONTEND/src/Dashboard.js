@@ -530,7 +530,7 @@ const Dashboard = () => {
   const handlePaymentSubmit = async (paymentData, isInternational) => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
-      const endpoint = isInternational ? 'api//user/international-payment' : '/user/local-payment';
+      const endpoint = isInternational ? '/api/user/international-payment' : '/api/user/local-payment';
       const response = await axios.post(`https://localhost:3001${endpoint}`, {
         ...paymentData,
         userId: user.userId

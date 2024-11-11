@@ -25,7 +25,7 @@ const EmployeeLogin = () => {
   // Regex patterns for validation
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic email format
   const usernamePattern = /^[a-zA-Z0-9_-]{3,20}$/; // Allows alphanumeric characters, underscores, and hyphens (3-20 chars)
-  const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/; // Minimum 8 chars, at least 1 letter and 1 number
+  //const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/; // Minimum 8 chars, at least 1 letter and 1 number
 
   const validateInput = () => {
     if (!formData.identifier) {
@@ -39,11 +39,6 @@ const EmployeeLogin = () => {
       // Username is valid
     } else {
       setError("Invalid email or username.");
-      return false;
-    }
-
-    if (!formData.password || !passwordPattern.test(formData.password)) {
-      setError("Password must be 8 characters long and include at least one letter and one number.");
       return false;
     }
 
