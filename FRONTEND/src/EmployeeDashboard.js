@@ -77,7 +77,7 @@ const EmployeeDashboard = () => {
                                     <td>{transaction.payee}</td>
                                     <td>{transaction.account}</td>
                                     <td>{transaction.amount}</td>
-                                    <td>{transactions.swiftCode}</td>
+                                    <td>{transaction.swiftCode}</td>
                                     <td style={transaction.status === "Verified" ? styles.verified : styles.pending}>
                                         {transaction.status}
                                     </td>
