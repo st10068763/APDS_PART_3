@@ -22,6 +22,9 @@ const currencies = [
   { code: 'NZD', name: 'New Zealand Dollar' },
   { code: 'HKD', name: 'Hong Kong Dollar' },
   { code: 'SEK', name: 'Swedish Krona' },
+  { code: 'NOK', name: 'Norwegian Krone' },
+  { code: 'AOA', name: 'Angolan Kwanza' },
+  { code: 'MOZ', name: 'Mozambican Metical' },
   { code: 'ZAR', name: 'South African Rand' },
   { code: 'KES', name: 'Kenyan Shilling' },
   { code: 'NGN', name: 'Nigerian Naira' },
@@ -210,7 +213,7 @@ const DashboardContent = ({ onPaymentSubmit }) => {
     const fetchTransactions = async () => {
       try {
         const user = JSON.parse(localStorage.getItem('user'));
-        const response = await axios.get(`https://localhost:3001/user/transactions/${user.userId}`, {
+        const response = await axios.get(`https://localhost:3001/api/user/transactions/${user.userId}`, {
           headers: {
             'Authorization': `Bearer ${user.token}`
           }
@@ -232,7 +235,7 @@ const DashboardContent = ({ onPaymentSubmit }) => {
       await onPaymentSubmit(paymentData, isInternational);
       // Refresh transactions after successful payment
       const user = JSON.parse(localStorage.getItem('user'));
-      const response = await axios.get(`https://localhost:3001/user/transactions/${user.userId}`, {
+      const response = await axios.get(`https://localhost:3001/api/user/transactions/${user.userId}`, {
         headers: {
           'Authorization': `Bearer ${user.token}`
         }
@@ -310,7 +313,7 @@ const TransactionsContent = () => {
     const fetchTransactions = async () => {
       try {
         const user = JSON.parse(localStorage.getItem('user'));
-        const response = await axios.get(`https://localhost:3001/user/transactions/${user.userId}`, {
+        const response = await axios.get(`https://localhost:3001/api/user/transactions/${user.userId}`, {
           headers: {
             'Authorization': `Bearer ${user.token}`
           }
@@ -527,7 +530,7 @@ const Dashboard = () => {
   const handlePaymentSubmit = async (paymentData, isInternational) => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
-      const endpoint = isInternational ? '/user/international-payment' : '/user/local-payment';
+      const endpoint = isInternational ? 'api//user/international-payment' : '/user/local-payment';
       const response = await axios.post(`https://localhost:3001${endpoint}`, {
         ...paymentData,
         userId: user.userId
