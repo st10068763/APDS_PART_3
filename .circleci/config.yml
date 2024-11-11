@@ -3,7 +3,7 @@ version: 2.1
 executors:
   docker:
     docker:
-      - image: circleci/python:3.8  # Choose a Docker image that matches your project’s environment
+      - image: circleci/node:14  
     working_directory: ~/repo
 
 jobs:
@@ -22,10 +22,10 @@ jobs:
           name: Run SonarQube Scan
           command: |
             sonar-scanner \
-              -Dsonar.projectKey=your-project-key \
+              -Dsonar.projectKey= SonerKey \
               -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.login=$SONAR_TOKEN  # Use the secret token
-              -Dsonar.projectBaseDir=.  # Define the project base directory
+              -Dsonar.login=$SONAR_TOKEN  1e3abfc693ba3fe7d1d9135797dae8a2cd7077f7
+              -Dsonar.projectBaseDir= .
 
 workflows:
   version: 2
