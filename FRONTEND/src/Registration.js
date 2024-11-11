@@ -237,6 +237,14 @@ const Registration = () => {
             Click to Login
           </button>
         </div>
+
+        <div style={styles.loginSection}>
+          <p style={styles.existingCustomerText}>An existing Employee?</p>
+          <button type="button" onClick={() => window.location.href = "/employee-login"} style={styles.loginButton}>
+            Click to Login as Employee
+          </button>
+        </div>
+
       </form>
     </div>
   );
